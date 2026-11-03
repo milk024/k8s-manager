@@ -1,0 +1,21 @@
+{
+  "name": "k8s_manager",
+  "version": "0.1.7",
+  "private": true,
+  "description": "Namespace: infra 통합 관리 서버 — K8s 관리, Gitea, Package Mirror, Pod/GPU/Disk 리소스 모니터링",
+  "main": "main.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node main.cjs",
+    "dev": "node --watch main.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "1.4.0",
+    "cors": "^2.8.5",
+    "express": "5.2.1",
+    "socket.io": "4.8.3"
+  }
+}

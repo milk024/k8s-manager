@@ -1,0 +1,33 @@
+# infra-gateway.yaml
+# infra namespace 공용 Gateway (Helm 밖, kubectl apply로 직접 관리).
+# Gitea(/), k8s_manager(/api, /socket.io, /webhook)가 HTTPRoute로 붙는다 (ADR-005, ADR-007).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: infra-gateway
+  namespace: infra
+spec:
+  gatewayClassName: envoy
+  addresses:
+  - type: IPAddress
+    value: 10.0.0.23
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: https
+    hostname: gpu.example.ac.kr
+    port: 443
+    protocol: HTTPS
+    allowedRoutes:
+      namespaces:
+        from: Same
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: wildcard-example-tls

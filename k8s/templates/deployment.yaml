@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-manager
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: k8s-manager
+  template:
+    metadata:
+      labels:
+        app: k8s-manager
+    spec:
+      serviceAccountName: k8s-manager
+{{- if .Values.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecretName }}
+{{- end }}
+      containers:
+        - name: k8s-manager
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          envFrom:
+            - configMapRef:
+                name: k8s-manager-config
+            - secretRef:
+                name: k8s-manager-secret
+            # GITEA_TOKEN은 helm이 관리하지 않는 외부 Secret에서 온다 (values.yaml 참고) —
+            # helm upgrade가 chart 기본값(빈 문자열)으로 재설정해버리는 사고가 반복돼서 분리함.
+            - secretRef:
+                name: {{ .Values.giteaTokenSecretName }}
+                optional: true
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+{{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+{{- end }}
+{{- if .Values.persistence.enabled }}
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: k8s-manager-logs
+{{- end }}

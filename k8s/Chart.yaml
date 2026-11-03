@@ -1,0 +1,8 @@
+apiVersion: v2
+name: k8s-manager
+description: >-
+  Namespace: infra 통합 관리 서버 — K8s 관리 · Gitea · Package Mirror ·
+  Pod/GPU/디스크 리소스 모니터링 (ADR-029)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

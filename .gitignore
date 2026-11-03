@@ -1,0 +1,4 @@
+node_modules/
+.env
+logs/
+k8s/values-secret.yaml

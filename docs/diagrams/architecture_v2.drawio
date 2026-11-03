@@ -1,0 +1,173 @@
+<mxfile host="Electron">
+  <diagram name="k8s_manager Architecture" id="k8s-manager-arch">
+    <mxGraphModel dx="1935" dy="2784" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="pc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f7f6;strokeColor=#333333;" value="관리자 사용자 PC&lt;br&gt;(hosts 파일에 도메인 매핑)" vertex="1">
+          <mxGeometry height="70" width="220" x="310" y="-1280" as="geometry" />
+        </mxCell>
+        <mxCell id="ingress" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbe7ee;strokeColor=#3f6ea5;" value="Ingress Controller (nginx 가정, 미설치)&#xa;학교망 발급 TLS · Host 헤더 라우팅" vertex="1">
+          <mxGeometry height="80" width="220" x="310" y="-1140" as="geometry" />
+        </mxCell>
+        <mxCell id="nsInfra" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=none;strokeColor=#b85450;dashed=1;fontStyle=1;strokeWidth=4;" value="Namespace: infra (wk-01)" vertex="1">
+          <mxGeometry height="960" width="930" x="20" y="-1030" as="geometry" />
+        </mxCell>
+        <mxCell id="gui" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#efe6f7;strokeColor=#7d6aa8;" value="Local Ops GUI Pod&#xa;React(Vite 빌드), 별도 저장소&#xa;같은 namespace 별도 Deployment/Service" vertex="1">
+          <mxGeometry height="90" width="240" x="70" y="-970" as="geometry" />
+        </mxCell>
+        <mxCell id="mgmt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eef3;strokeColor=#3f6ea5;fontStyle=1" value="관리서버 Pod&#xa;express + cors + socket.io" vertex="1">
+          <mxGeometry height="90" width="240" x="360" y="-750" as="geometry" />
+        </mxCell>
+        <mxCell id="k8sSvc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbe7ee;strokeColor=#3f6ea5;" value="services/k8s&#xa;@kubernetes/client-node&#xa;in-cluster ServiceAccount" vertex="1">
+          <mxGeometry height="80" width="200" x="60" y="-610" as="geometry" />
+        </mxCell>
+        <mxCell id="giteaSvc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e9d7;strokeColor=#b8842f;" value="services/gitea&#xa;Gitea REST + simple-git" vertex="1">
+          <mxGeometry height="80" width="200" x="280" y="-610" as="geometry" />
+        </mxCell>
+        <mxCell id="mirrorSvc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2eee2;strokeColor=#4f8f5c;" value="services/mirror&#xa;pip · npm · OCI Registry" vertex="1">
+          <mxGeometry height="80" width="200" x="500" y="-610" as="geometry" />
+        </mxCell>
+        <mxCell id="monitorSvc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#efe6f7;strokeColor=#7d6aa8;" value="services/monitor&#xa;Metrics API 폴링 (5s)" vertex="1">
+          <mxGeometry height="80" width="200" x="720" y="-610" as="geometry" />
+        </mxCell>
+        <mxCell id="middleware" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f7f6;strokeColor=#666666;dashed=1;" value="middleware/auth.cjs, audit.cjs&#xa;RBAC · 반입이력/버전/해시 감사" vertex="1">
+          <mxGeometry height="60" width="300" x="320" y="-490" as="geometry" />
+        </mxCell>
+        <mxCell id="apiserver" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbe7ee;strokeColor=#3f6ea5;" value="kube-apiserver :6443&#xa;(cp-01, Control Plane)" vertex="1">
+          <mxGeometry height="70" width="200" x="60" y="-290" as="geometry" />
+        </mxCell>
+        <mxCell id="metrics" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#efe6f7;strokeColor=#7d6aa8;" value="metrics-server&#xa;metrics.k8s.io (Aggregated API)" vertex="1">
+          <mxGeometry height="70" width="200" x="720" y="-290" as="geometry" />
+        </mxCell>
+        <mxCell id="targetPods" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f7f6;strokeColor=#333333;" value="대상 Pod&#xa;(llm-inference · rag-system · vkey-system 등)" vertex="1">
+          <mxGeometry height="70" width="260" x="360" y="-170" as="geometry" />
+        </mxCell>
+        <mxCell id="giteaDaemon" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e9d7;strokeColor=#b8842f;" value="Gitea Daemon&#xa;(로컬 Git)" vertex="1">
+          <mxGeometry height="60" width="180" x="280" y="-390" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2eee2;strokeColor=#4f8f5c;" value="Package Mirror Registry&#xa;(Gitea Registry / OCI)" vertex="1">
+          <mxGeometry height="60" width="200" x="500" y="-390" as="geometry" />
+        </mxCell>
+        <mxCell id="prometheus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbe4d5;strokeColor=#c55a11;fontStyle=1" value="Prometheus (monitoring ns)&#xa;GPU(dcgm-exporter)·디스크I/O(node-exporter)&#xa;CPU/RAM 시계열 저장" vertex="1">
+          <mxGeometry height="90" width="260" x="1000" y="-610" as="geometry" />
+        </mxCell>
+        <mxCell id="exporters" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f7f6;strokeColor=#333333;dashed=1;" value="node-exporter · dcgm-exporter&#xa;(각 노드 DaemonSet, NVIDIA GPU Operator 포함)" vertex="1">
+          <mxGeometry height="70" width="280" x="1000" y="-170" as="geometry" />
+        </mxCell>
+        <mxCell id="alertmanager" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbe4d5;strokeColor=#c55a11;" value="Alertmanager&#xa;임계치 Alert Rule 평가" vertex="1">
+          <mxGeometry height="80" width="240" x="1010" y="-460" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="pc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="ingress" value="HTTPS 443">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="gui" value="path / (Host 헤더)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="370" y="-1015" />
+              <mxPoint x="190" y="-1015" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="mgmt" value="path /api, /socket.io">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="-905" />
+              <mxPoint x="560" y="-905" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="gui" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeWidth=3;" target="mgmt" value="브라우저 경유 REST/소켓 호출&#xa;(cors 허용 origin, 같은 origin이면 불필요)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="380" y="-845" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="mgmt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="k8sSvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="mgmt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="giteaSvc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="440" y="-635" />
+              <mxPoint x="380" y="-635" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="mgmt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="mirrorSvc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="-635" />
+              <mxPoint x="600" y="-635" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="mgmt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="monitorSvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="k8sSvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="apiserver" value="Ingress/Egress CRUD&#xa;Deployment · Pod Log/Event">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="apiserver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="targetPods">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="-255" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="monitorSvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="metrics" value="getPodMetrics(namespace)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="targetPods" value="CPU(nanocore)/Mem(Ki) 스크랩">
+          <mxGeometry relative="1" x="-0.3191" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="530" y="-255" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="giteaSvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="giteaDaemon">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="-430" />
+              <mxPoint x="330" y="-430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="mirrorSvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;" target="registry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="monitorSvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#c55a11;" target="prometheus" value="PromQL 쿼리 (GPU·디스크I/O)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="exporters" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#c55a11;dashed=1;" target="prometheus" value="scrape">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="-170" />
+              <mxPoint x="1250" y="-460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="prometheus" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#c55a11;" target="alertmanager" value="Alert Rule 평가 대상 메트릭">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="alertmanager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#c55a11;dashed=1;" target="mgmt" value="Webhook POST /webhook/alert&#xa;(임계치 초과 알람 인바운드)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1130" y="-705" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="giteaDaemon" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#b8842f;dashed=1;" target="mgmt" value="Webhook POST /webhook/gitea&#xa;(push 이벤트 → CI/CD 트리거, 인바운드)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="-430" />
+              <mxPoint x="240" y="-705" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

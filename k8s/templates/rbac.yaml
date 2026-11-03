@@ -1,0 +1,72 @@
+# ADR-002: 관리서버는 이 ServiceAccount로 in-cluster 인증한다.
+# k8s_manager는 모든 namespace의 Pod 하드웨어 사용률을 모니터링해야 하므로,
+# 조회(get/list/watch)는 ClusterRole로 클러스터 전체에 부여한다.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-manager
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-manager-read
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-manager-read
+subjects:
+  - kind: ServiceAccount
+    name: k8s-manager
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: k8s-manager-read
+  apiGroup: rbac.authorization.k8s.io
+---
+# ADR-014(내부 RBAC 판단) 대기 중 — NetworkPolicy 쓰기, Deployment 조작(스케일/재시작/이미지 변경),
+# Pod 삭제(재시작) 모두 확정 전까지는 이 저장소가 배포된 namespace로만 한정한다
+# (클러스터 전체 쓰기 권한은 부여하지 않음 — 다른 namespace의 운영 워크로드에 실수로 영향 주는 것 방지).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: k8s-manager-write
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["create", "update", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: k8s-manager-write
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: k8s-manager
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: k8s-manager-write
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,23 @@
+# dcgm-servicemonitor.yaml
+# GPU Operator가 만들어주는 ServiceMonitor(gpu-operator)는 GPU Operator 자기 자신의
+# 메트릭만 타겟팅하고(app: gpu-operator), release: kube-prometheus-stack 라벨도 없어서
+# 우리 Prometheus(serviceMonitorSelector: release=kube-prometheus-stack)가 인식하지 못한다.
+# nvidia-dcgm-exporter(GPU 사용률 메트릭, 포트 9400)를 스크랩할 ServiceMonitor를 따로 만든다.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nvidia-dcgm-exporter
+  namespace: gpu-operator
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - gpu-operator
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+  endpoints:
+    - port: gpu-metrics
+      path: /metrics
+      interval: 30s

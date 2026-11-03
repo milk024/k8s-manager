@@ -1,0 +1,8 @@
+node_modules
+.git
+.env
+*.log
+logs/
+docs/
+k8s/
+README.md

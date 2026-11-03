@@ -1,0 +1,56 @@
+gatewayAPI:
+  core:
+    httpRoute:
+      enabled: true
+      hostnames: []
+      parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: infra-gateway
+        namespace: infra
+        sectionName: http
+      tls: false
+  enabled: true
+gitea:
+  admin:
+    email: admin@internal.local
+    password: ""   # 실제 값은 values-secret.yaml(gitignore) 또는 --set-string으로 주입
+    username: gitea_admin
+  config:
+    actions:
+      ENABLED: true
+    cache:
+      ADAPTER: memory
+    server:
+      DOMAIN: 10.0.0.23
+      PROTOCOL: http
+      ROOT_URL: http://10.0.0.23/
+      SSH_LISTEN_PORT: 2222
+      SSH_PORT: 22
+    session:
+      PROVIDER: memory
+image:
+  digest: ""
+  fullOverride: ""
+  pullPolicy: IfNotPresent
+  registry: docker.gitea.com
+  repository: gitea
+  rootless: true
+  tag: 1.27.1
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        database: gitea
+        password: ""   # 실제 값은 values-secret.yaml(gitignore) 또는 --set-string으로 주입
+        username: gitea
+postgresql-ha:
+  enabled: false
+service:
+  http:
+    type: ClusterIP
+valkey:
+  enabled: false
+valkey-cluster:
+  enabled: false
