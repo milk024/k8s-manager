@@ -21,3 +21,8 @@ StorageClass는 `nfs-csi`(default)를 사용하는 것으로 확정. 단, 서비
 
 - NFS 백엔드는 같은 노드의 `/data/nfs`(nvme0n1p1, 7.6TB)다. OS 디스크는 별도의 HighPoint NVMe RAID(`/dev/hptblock0n0p4`)다.
 - 단일 NFS 프로세스 의존은 2026-10-11 장애의 직접 원인이었다([0043](0043-os-auto-update-disabled.md), [0024](0024-pv-storage-redundancy.md)).
+
+## 현황 갱신 (2026-11-05)
+
+- `rag-storage-pvc`의 `ocr-cache` 하위 폴더(PaddleOCR 모델 캐시)를 제거했다. OCR 모델은 이제 베이스 이미지 안에 있다([0049](0049-rag-model-base-image.md)). 이 PVC에는 `documents`, `images`만 남아 있다.
+- PVC 수와 총 용량은 그대로다(10개, 1,419GiB 요청).

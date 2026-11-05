@@ -44,3 +44,8 @@ docker push 10.0.0.23:80/myorg/hello-world:test   # 성공
 
 - 실제 레지스트리 주소는 `10.0.0.23:80/myorg/<서비스>`다. 운영 이미지 태그는 semver가 아니라 **git commit SHA**를 쓴다(예: `rag-server:3c04419...`). `latest` 금지 원칙은 지켜지고 있고, SHA로도 롤백할 수 있다.
 - 멀티노드 전환 시 노드마다 이미지를 수동으로 적재하지 않으려면 공용 레지스트리가 필요하다. 그래서 Harbor 도입을 계획에 넣었다([0045](0045-multinode-transition-rto-rpo.md), 크리티컬 패스 CP-1). 확정되면 이 ADR을 Superseded 처리한다.
+
+## 현황 갱신 (2026-11-05)
+
+- 베이스 이미지 `rag-model-base`는 semver 태그(`v1`~`v5`)를 쓴다. v5는 2026-11-05 서버에서 빌드해 push했다([0049](0049-rag-model-base-image.md)). 앱 이미지는 계속 commit SHA 태그를 쓴다.
+- Gitea 패키지 저장소 사용량은 약 29.7GB다. NFS에 용량 제한이 없어 PVC 요청값(10Gi)과 상관없이 쓸 수 있다. 실제 한계는 NFS 디스크(6.9T)다.

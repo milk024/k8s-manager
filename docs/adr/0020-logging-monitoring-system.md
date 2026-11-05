@@ -25,3 +25,7 @@
   - vLLM 메트릭(ServiceMonitor) 미수집. 큐 길이, KV 캐시 사용률, TTFT를 볼 수 없다.
   - 중앙 로그 수집(Loki 등) 없음.
 - 우선순위: ① Alertmanager receiver 연결 → ② Prometheus를 NFS 밖 로컬 볼륨으로 이전 → ③ vLLM ServiceMonitor → ④ 로그 수집.
+
+## 현황 갱신 (2026-11-05)
+
+- 2026-11-05 재확인: Alertmanager receiver는 여전히 `null` 하나뿐이다. Prometheus 저장소도 여전히 nfs-csi(보존 10일)다. vLLM ServiceMonitor는 없다. 앞의 우선순위는 그대로다.

@@ -56,3 +56,9 @@
   - 월별 job 실패율 8월 13.0% → 9월 3.4% → 10월 2.2%
 - 빌드 결과는 `k8s_manager`가 `gitea:actions` socket 이벤트로 대시보드에 실시간 전달한다([0047](0047-realtime-socket-push.md)).
 - 멀티노드 전환 시 Jenkins + Kaniko + ArgoCD로 바꾸는 계획이 있다([0045](0045-multinode-transition-rto-rpo.md)). 확정되면 이 ADR을 Superseded 처리한다.
+
+## 현황 갱신 (2026-11-05)
+
+- 2026-11-05 rag-server 빌드·배포(`f3736bf`)도 정상 수행됐다. 20GB 베이스 이미지 빌드도 서버에서 한다([0049](0049-rag-model-base-image.md)).
+- **리스크**: Runner DinD의 `/var/lib/docker`가 노드 OS 디스크(HighPoint RAID, 881G 중 45% 사용)에 쌓인다. 이미지 120GB와 빌드 캐시 128GB가 있고, 그중 이미지 71GB와 빌드 캐시 56GB는 정리할 수 있다.
+  - 조치 방향: 주기적 `docker builder prune --keep-storage`·`docker image prune`, 또는 DinD 저장소를 별도 볼륨으로 분리.

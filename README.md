@@ -4,7 +4,7 @@
 
 - **관리서버**: 클러스터 전체의 Pod/GPU 상태와 CI/CD 결과를 대시보드로 실시간 전달하는 Node.js 서버
 - **인프라 매니페스트**: Helm Chart, Gateway, CI Runner 등
-- **설계 기록**: 아키텍처 결정 기록(ADR) 47건
+- **설계 기록**: 아키텍처 결정 기록(ADR) 49건
 
 > 공개용으로 정리하면서 실제 IP, 도메인, 조직명은 예시값(`10.0.0.x`, `example.ac.kr`, `myorg`)으로 바꿨고 비밀번호와 토큰은 모두 제거했다.
 
@@ -108,7 +108,7 @@ flowchart LR
 
 ## 기술 의사결정 (ADR)
 
-전체 목록과 상태는 [`docs/adr/ADR.md`](docs/adr/ADR.md)에 있다. 47건 중 확정 23건이다. 대표 결정은 아래와 같다.
+전체 목록과 상태는 [`docs/adr/ADR.md`](docs/adr/ADR.md)에 있다. 49건 중 확정 25건, 제안 2건이다(2026-11-05 서버 상태 기준). 대표 결정은 아래와 같다.
 
 | ADR | 결정 | 핵심 근거 |
 |---|---|---|
@@ -119,6 +119,7 @@ flowchart LR
 | [046](docs/adr/0046-helm-external-secret.md) | 토큰을 Helm 밖 Secret으로 분리 | 실제 사고: Helm 부분 실패로 토큰이 빈 값으로 덮어써짐 |
 | [047](docs/adr/0047-realtime-socket-push.md) | 대시보드 데이터를 socket.io push로 전달 | Gitea에 빌드 완료 webhook이 없어 서버 측 짧은 폴링으로 대체 |
 | [043](docs/adr/0043-os-auto-update-disabled.md) | OS 자동 업데이트 비활성화 | 26시간 장애의 직접 원인 |
+| [049](docs/adr/0049-rag-model-base-image.md) / [048](docs/adr/0048-model-weights-on-pvc.md) | RAG 모델을 베이스 이미지에 넣고 서버에서 빌드 → 이후 PVC로 분리 제안 | PC 빌드·push 반복 실패(20GB+ 이미지), OCR 모델 외부 다운로드 제거 |
 | [045](docs/adr/0045-multinode-transition-rto-rpo.md) | 멀티노드 전환 크리티컬 패스, Tier별 RTO/RPO | 단일 노드 SPOF가 실제 장애로 확인됨 |
 
 ## 관리서버 (이 저장소의 코드)
@@ -138,7 +139,7 @@ core/        express 앱, 라우터 (k8s · gitea · monitor · mirror · webhoo
 services/    K8s · Gitea · Prometheus · socket.io 클라이언트
 helpers/     설정, 로그, 감사 로그, 메트릭 파서
 k8s/         Helm Chart, infra Gateway, Gitea values, act_runner, DCGM ServiceMonitor
-docs/adr/    아키텍처 결정 기록 47건
+docs/adr/    아키텍처 결정 기록 49건
 docs/diagrams/  draw.io 아키텍처 다이어그램
 ```
 

@@ -2,8 +2,8 @@
 
 번호는 작성 순서(파일명 고정)이고, 아래 목차는 주제별로 재구성한 것이다. 상태 열은 각 문서 Status의 요약이며, 세부 내용은 문서 본문의 `현황 갱신` 절을 본다.
 
-- 최종 정리: 2026-11-03 (실제 클러스터 조회 기준으로 Status 일괄 갱신)
-- 총 47건 — 확정 23 · 부분 확정 7 · 제안 1 · 대기/조사 16
+- 최종 정리: 2026-11-05 (실제 클러스터 조회 기준으로 Status 갱신)
+- 총 49건 — 확정 25 · 부분 확정 7 · 제안 2 · 대기/조사 15
 
 ## 우선 처리 필요 (리스크 높은 순)
 
@@ -14,7 +14,8 @@
 | 3 | Alertmanager receiver 연결, Prometheus를 NFS 밖으로 이전 | [0020](0020-logging-monitoring-system.md), [0017](0017-incident-response-sla.md) |
 | 4 | etcd·Postgres·Gitea 백업 자동화 및 복구 리허설 | [0016](0016-backup-recovery-policy.md), [0023](0023-etcd-backup-policy.md) |
 | 5 | ResourceQuota/LimitRange, DB Pod requests/limits 지정 | [0014](0014-rbac-networkpolicy-scope.md) |
-| 6 | 월 1회 수동 패치 창 확정 | [0043](0043-os-auto-update-disabled.md) |
+| 6 | CI Runner DinD 이미지·빌드 캐시 정리 정책 (OS 디스크에 약 248GB 누적) | [0042](0042-cicd-runner-execution.md), [0049](0049-rag-model-base-image.md) |
+| 7 | 월 1회 수동 패치 창 확정 | [0043](0043-os-auto-update-disabled.md) |
 
 ## 목차
 
@@ -29,7 +30,7 @@
 9. [컴플라이언스](#9-컴플라이언스)
 10. [인프라 배포(Helm/이미지/문서화)](#10-인프라-배포helm이미지문서화)
 11. [스토리지](#11-스토리지)
-12. [vLLM/서빙](#12-vllm서빙)
+12. [vLLM/서빙 · 모델 운영](#12-vllm서빙--모델-운영)
 13. [하드웨어 사양](#13-하드웨어-사양)
 
 ---
@@ -131,14 +132,16 @@
 |---|---|---|---|
 | 031 | 스토리지 솔루션 및 용량 계획 | 부분 확정 | [0031-storage-solution.md](0031-storage-solution.md) |
 
-## 12. vLLM/서빙
+## 12. vLLM/서빙 · 모델 운영
 
 | # | 제목 | 상태 | 파일 |
 |---|---|---|---|
 | 032 | vLLM Replica 스케줄링 및 분산 처리 범위 | 확정 | [0032-vllm-replica-scheduling-scope.md](0032-vllm-replica-scheduling-scope.md) |
 | 033 | 임베딩(EMB) 모델 서빙 가능 여부 | 부분 확인 | [0033-embedding-model-serving-feasibility.md](0033-embedding-model-serving-feasibility.md) |
 | 034 | LiteLLM Proxy 기능/역할 확인 | 확정 | [0034-litellm-proxy-role.md](0034-litellm-proxy-role.md) |
-| 035 | 대용량 모델 운영 방식 | 대기 중 | [0035-large-model-operations.md](0035-large-model-operations.md) |
+| 035 | 대용량 모델 운영 방식 | 확정 | [0035-large-model-operations.md](0035-large-model-operations.md) |
+| 048 | rag-server 모델 가중치: 이미지에 넣지 않고 PVC에 두고 마운트 | 제안 | [0048-model-weights-on-pvc.md](0048-model-weights-on-pvc.md) |
+| 049 | RAG 모델(임베딩·리랭커·OCR)을 베이스 이미지에 포함하고 서버에서 빌드 | 확정·운영 중 | [0049-rag-model-base-image.md](0049-rag-model-base-image.md) |
 
 ## 13. 하드웨어 사양
 
@@ -153,6 +156,7 @@
 - 2026-11-03: 번호 중복 해소 — `0041-cicd-runner-execution.md` → `0042-cicd-runner-execution.md`(0041은 simple-git 폐기 문서로 유지), 참조 링크 수정
 - 2026-11-03: 0001~0042 중 24건 Status를 실제 클러스터 상태로 갱신(각 문서에 `이전 Status`와 `현황 갱신` 절 추가)
 - 2026-11-03: 신규 0043~0047 추가(자동 업데이트 비활성화, 커널 고정, 멀티노드 전환 RTO/RPO, Helm Secret 분리, socket push)
+- 2026-11-05: 신규 0048(모델 가중치 PVC 이전, 제안)·0049(RAG 모델 베이스 이미지 포함·서버 빌드, 운영 중) 추가, 0035 확정, 0020·0031·0036·0042·0044 현황 갱신
 
 ## 출처 매핑
 
@@ -166,3 +170,4 @@
 - `0043~0044`: 2026-10-11 NFS 장애 대응 및 후속 조치
 - `0045`: `멀티노드_전환_다운타임_RTO_RPO_v2.docx` 보고서
 - `0046~0047`: `k8s_manager` 커밋 `46a36f4`, `dce898c`, `38e0353`
+- `0048~0049`: rag-server 커밋 `f3736bf`, `rag-model-base:v5`, PC 빌드·push 실패 조사

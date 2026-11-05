@@ -35,3 +35,7 @@
 - 장기적으로는 gpu-operator `usePrecompiled=true` 또는 드라이버 버전 고정(`autoUpgrade=false`)을 검토해 부팅 시 외부 다운로드 의존을 없앤다([0008](0008-network-exposure-scope.md)의 아웃바운드 0개 원칙과 연결).
 - 멀티노드 전환 시 신규 노드는 HighPoint RAID에 의존하지 않는 구성(기본 커널 모듈로 인식되는 디스크)을 권장한다([0045](0045-multinode-transition-rto-rpo.md)).
 - 관련: [0040](0040-single-server-hardware-spec.md), [0043](0043-os-auto-update-disabled.md)
+
+## 현황 갱신 (2026-11-05)
+
+- 2026-11-05 기준 노드 커널은 `6.8.0-136-generic`으로 유지되고 있다(K8s 노드 정보로 확인). 146용 HighPoint 드라이버 재빌드 여부는 호스트에서 직접 확인해야 하며, 확인 전까지는 미실시로 본다.
