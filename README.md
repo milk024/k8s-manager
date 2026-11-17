@@ -11,7 +11,7 @@
 | 저장소 | 역할 |
 |---|---|
 | [admin-manager](https://github.com/milk024/admin-manager) | 고권한 관리 서버. 개발자 K8s 계정(kubeconfig)·Gitea 계정 발급, 네임스페이스 YAML 관리, 감사 로그 |
-| [monitoring-web](https://github.com/milk024/monitoring-web) | 운영 대시보드(React). 모니터링·빌드·배포 상태·Pod 상세·YAML 편집·관리자 화면 |
+| [k8s-monitoring-web](https://github.com/milk024/k8s-monitoring-web) | 운영 대시보드(React). 모니터링·빌드·배포 상태·Pod 상세·YAML 편집·관리자 화면 |
 | [deploy-infra](https://github.com/milk024/deploy-infra) · [deploy-rag](https://github.com/milk024/deploy-rag) · [deploy-vkey](https://github.com/milk024/deploy-vkey) | GitOps 배포 저장소(ArgoCD가 읽는 Helm 차트·values) |
 
 > 공개용으로 정리하면서 실제 IP, 도메인, 조직명은 예시값(`10.0.0.x`, `example.ac.kr`, `myorg`)으로, 팀원 실명은 역할로 바꿨고 비밀번호와 토큰은 모두 제거했다. 각 저장소는 운영 이력 대신 정리된 스냅샷 커밋으로 올렸다.
