@@ -25,10 +25,10 @@
 
 | Gateway | 리스너 | 인증서 Secret |
 |---|---|---|
-| `infra-gateway` | 80, 443 | `wildcard-example-tls` |
+| `infra-gateway` | 80, 443 | `wildcard-myorg-tls` |
 | `vkey-gateway` | 80, 443, 8080 | `vkey-tls-secret` |
 | `rag-gateway` | 80, 443, 8080 | `rag-tls-secret` |
 | `kserve-ingress-gateway`, `ai-gateway` | 80만 | 없음 |
 
-- **남은 이슈**: HTTP만 쓰는 LLM 추론 Gateway 2개의 인증·TLS 적용은 [0008](0008-network-exposure-scope.md)에서 다룬다.
+- **남은 이슈**: `ai-gateway`(.22)와 `kserve-ingress-gateway`(.21)는 HTTP만 열려 있고 인증(SecurityPolicy)도 없다. 노출 범위는 [0008](0008-network-exposure-scope.md)에서 다룬다.
 - 인증서 만료일 추적과 갱신 절차가 정해져 있지 않다. 만료 알림이 필요하다([0020](0020-logging-monitoring-system.md)).

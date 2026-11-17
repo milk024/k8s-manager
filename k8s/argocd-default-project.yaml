@@ -1,0 +1,21 @@
+# ArgoCD 기본 프로젝트 잠금 (2026-11-12)
+# - default 프로젝트는 ArgoCD 가 자동으로 만들고, 기본값은 모든 저장소·모든 대상·모든 클러스터 리소스 허용이다.
+#   Application 의 project 를 default 로 지정하면 infra/rag/vkey AppProject 제한을 우회할 수 있어 전부 막는다.
+# - 우리 Application 은 모두 infra / rag / vkey 프로젝트 소속이라 영향 없음.
+#   새 서비스는 deploy-* 저장소의 argocd/project-*.yaml 처럼 전용 AppProject 를 만든다.
+# 적용: kubectl apply -f k8s/argocd-default-project.yaml
+# (ArgoCD 공식 문서의 "default 프로젝트 잠그기" 방식)
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  description: "잠금 — 사용 금지. 서비스별 AppProject(infra/rag/vkey)를 쓸 것"
+  sourceRepos: []
+  sourceNamespaces: []
+  destinations: []
+  clusterResourceWhitelist: []
+  namespaceResourceBlacklist:
+  - group: '*'
+    kind: '*'

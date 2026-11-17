@@ -1,0 +1,55 @@
+# Jenkins 웹 UI: https://gpu.example.ac.kr/jenkins (infra-gateway https 리스너, 2026-11-16)
+# - Gateway 는 같은 네임스페이스(infra) 라우트만 받으므로 HTTPRoute 는 infra 에 두고,
+#   jenkins 네임스페이스의 Service 참조는 ReferenceGrant 로 허용한다.
+# - /jenkins 접두사는 떼지 않는다 (Jenkins controller.jenkinsUriPrefix=/jenkins, k8s/jenkins-values.yaml)
+# - Gitea 웹훅은 이 경로가 아니라 클러스터 내부 주소로 받는다
+# 적용: kubectl apply -f k8s/jenkins-httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jenkins
+  namespace: infra
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: infra-gateway
+    namespace: infra
+    sectionName: https
+  hostnames:
+  - gpu.example.ac.kr
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /jenkins
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /jenkins/
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /jenkins/
+    backendRefs:
+    - name: jenkins
+      namespace: jenkins
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: infra-httproute-to-jenkins
+  namespace: jenkins
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: infra
+  to:
+  - group: ""
+    kind: Service
+    name: jenkins

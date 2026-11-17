@@ -1,6 +1,7 @@
-# infra-gateway.yaml
-# infra namespace 공용 Gateway (Helm 밖, kubectl apply로 직접 관리).
-# Gitea(/), k8s_manager(/api, /socket.io, /webhook)가 HTTPRoute로 붙는다 (ADR-005, ADR-007).
+# infra-gateway (10.0.0.23) — 실제 클러스터 spec 기준 (2026-11-12)
+# - http  :80  → k8s/http-to-https-redirect.yaml (HTTPS 리다이렉트, /v2 레지스트리만 예외)
+# - https :443 → gpu.example.ac.kr, 와일드카드 인증서(*.example.ac.kr, Secret wildcard-myorg-tls)
+#   경로: "/" 대시보드(k8s-manager-route), "/gitea" Gitea(k8s/gitea-httproute.yaml), "/v2" 레지스트리
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -9,25 +10,25 @@ metadata:
 spec:
   gatewayClassName: envoy
   addresses:
-  - type: IPAddress
-    value: 10.0.0.23
+    - type: IPAddress
+      value: 10.0.0.23
   listeners:
-  - name: http
-    port: 80
-    protocol: HTTP
-    allowedRoutes:
-      namespaces:
-        from: Same
-  - name: https
-    hostname: gpu.example.ac.kr
-    port: 443
-    protocol: HTTPS
-    allowedRoutes:
-      namespaces:
-        from: Same
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - group: ""
-        kind: Secret
-        name: wildcard-example-tls
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: gpu.example.ac.kr
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: wildcard-myorg-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

@@ -1,3 +1,8 @@
+# infra-gateway HTTP(:80) 리스너 — 2026-11-12 C단계
+# - /v2  : 2026-11-13 닫음. 이미지 주소를 모두 https://gpu.example.ac.kr 로 옮겼다 (HTTP 로 오면 아래 기본 규칙대로 https 로 301).
+# - /myorg : 예전 git 원격(http://10.0.0.23/myorg/<repo>.git) → https://gpu.example.ac.kr/gitea/myorg/<repo>.git 로 301.
+#          git 은 첫 요청의 리다이렉트를 따라가고, 인증은 HTTPS 쪽에서만 한다.
+# - 그 외 : 전부 https://gpu.example.ac.kr 로 301 (예전 /api, /socket.io, /webhook 평문 경로는 삭제)
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -12,40 +17,18 @@ spec:
         - path:
             type: PathPrefix
             value: /myorg
-      backendRefs:
-        - name: gitea-http
-          port: 3000
-    # Docker Registry API 경로 추가
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /v2
-      backendRefs:
-        - name: gitea-http
-          port: 3000
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /api
-      backendRefs:
-        - name: k8s-manager-svc
-          port: 8000
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /socket.io
-      backendRefs:
-        - name: k8s-manager-svc
-          port: 8000
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /webhook
-      backendRefs:
-        - name: k8s-manager-svc
-          port: 8000
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: gpu.example.ac.kr
+            statusCode: 301
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /gitea/myorg
     - filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
+            hostname: gpu.example.ac.kr   # IP 로 리다이렉트하면 인증서(*.example.ac.kr) 불일치 경고
             statusCode: 301

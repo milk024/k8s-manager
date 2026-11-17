@@ -1,0 +1,71 @@
+# Gitea HTTPS 라우트 (infra-gateway https 리스너, gpu.example.ac.kr)
+# 경로 배치 (2026-11-12): "/" 대시보드(k8s-manager-route), "/gitea" Gitea, "/api-k8s-m" k8s_manager(대시보드 nginx 경유)
+# - /gitea/*  : Gitea 웹·git. 앞의 /gitea 를 떼고 전달 (Gitea ROOT_URL = https://gpu.example.ac.kr/gitea/)
+# - /v2/*     : 컨테이너 레지스트리. OCI 규격상 루트 경로 고정이라 예외로 Gitea 에 직접 전달
+# - /myorg, /user, /explore : 이전 Gitea 주소(북마크·https 원격) → /gitea/... 로 301
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gitea
+  namespace: infra
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: infra-gateway
+    namespace: infra
+    sectionName: https
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /gitea
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: gitea-http
+      port: 3000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v2
+    backendRefs:
+    - name: gitea-http
+      port: 3000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /myorg
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /gitea/myorg
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /user
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /gitea/user
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /explore
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /gitea/explore

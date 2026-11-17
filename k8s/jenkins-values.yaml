@@ -1,0 +1,138 @@
+# Jenkins (jenkins/jenkins chart 5.13.3, Jenkins 2.580.2) — 2026-11-16 설치 (Gitea Actions → Jenkins 전환, 파일럿 admin-manager)
+#   helm upgrade --install jenkins jenkins/jenkins -n jenkins --create-namespace --version 5.13.3 -f k8s/jenkins-values.yaml
+# 원칙
+# - CI 만 담당: 이미지 빌드(Kaniko) → gpu.example.ac.kr 레지스트리 push → deploy-* 저장소 image.tag 갱신. 배포는 ArgoCD 그대로.
+# - 웹 UI: https://gpu.example.ac.kr/jenkins (2026-11-16 공개, 학내망). HTTPRoute infra/jenkins → jenkins/jenkins:8080 (k8s/jenkins-httproute.yaml)
+#   Service 는 ClusterIP 그대로. 비상 접속: kubectl port-forward -n jenkins svc/jenkins 8080:8080 → http://localhost:8080/jenkins
+# - Gitea 웹훅은 클러스터 내부 주소로 받는다: http://jenkins.jenkins.svc.cluster.local:8080/jenkins/gitea-webhook/post
+# - 자격 증명은 jenkins 네임스페이스의 Secret 에서 읽는다 (kubernetes-credentials-provider). values 에 비밀값 없음.
+#   관리자 비밀번호: Secret jenkins-admin / jenkins-admin-password (직접 생성, 바꿀 때도 이 Secret)
+# - 팀별 격리 (2026-11-16, k8s/jenkins-teams.yaml):
+#   빌드 Pod 는 팀 네임스페이스(jenkins-infra/rag/vkey)에서만 뜬다. 팀마다 cloud(infra/rag/vkey)가 따로 있고,
+#   각 cloud 는 그 네임스페이스에만 권한이 있는 SA 토큰(jenkins/k8s-<팀>-launcher)으로 접속한다.
+#   폴더(infra/rag/vkey)는 자기 cloud 만 쓸 수 있다(usageRestricted + permittedClouds). 기본 cloud 는 어느 폴더도 못 쓴다.
+#   쓰기 토큰(registry, deploy-repo)은 팀 네임스페이스 Secret 에만 있고, jenkins 네임스페이스에는 읽기 전용 checkout 토큰만 둔다.
+
+controller:
+  image:
+    tag: "2.580.2-lts-jdk21"
+  jenkinsUriPrefix: /jenkins
+  jenkinsUrl: https://gpu.example.ac.kr/jenkins/   # 화면 링크·알림에 쓰는 주소 (빌드 에이전트는 클러스터 내부 주소로 접속)
+  serviceType: ClusterIP
+  admin:
+    # 관리자 비밀번호는 직접 만든 Secret jenkins-admin(jenkins-admin-user, jenkins-admin-password)에서 읽는다 (2026-11-16).
+    # Jenkins 는 재시작·설정 재적용 때마다 admin 비밀번호를 이 Secret 값으로 맞추므로, 화면에서 바꾸지 말고 이 Secret 을 바꾼다.
+    createSecret: false
+    existingSecret: jenkins-admin
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      memory: "3Gi"
+  javaOpts: "-Xms512m -Xmx2g"
+  # 차트 기본 플러그인(kubernetes, workflow-aggregator, git, configuration-as-code) + 추가분
+  additionalPlugins:
+    - gitea                              # Gitea 저장소 연동·웹훅 트리거
+    - job-dsl                            # JCasC 로 Job 정의
+    - kubernetes-credentials-provider    # K8s Secret → Jenkins 자격 증명
+    - pipeline-utility-steps
+  # 플러그인 업데이트 사이트에서 설치 (컨트롤러가 인터넷에 나갈 수 있어야 함)
+  installLatestSpecifiedPlugins: false
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      # jenkins: 블록(numExecutors 등)은 차트 기본 설정(defaultConfig)이 이미 만든다 → 여기서 다시 쓰면 충돌로 기동 실패
+      system: |
+        unclassified:
+          giteaServers:
+            servers:
+              - displayName: gitea
+                serverUrl: https://gpu.example.ac.kr/gitea
+                manageHooks: false        # 웹훅은 저장소마다 직접 등록 (CI 계정에 저장소 관리 권한 없음)
+      jobs: |
+        jobs:
+          - script: |
+              // 팀 폴더: 자기 cloud 만 사용 가능 (KubernetesFolderProperty.permittedClouds)
+              def teamFolder = { String team, String desc ->
+                folder(team) {
+                  description(desc)
+                  configure { project ->
+                    project / 'properties' << 'org.csanchez.jenkins.plugins.kubernetes.KubernetesFolderProperty' {
+                      permittedClouds { string(team) }
+                    }
+                  }
+                }
+              }
+              // 저장소별 multibranch Job: main 만 빌드, Jenkinsfile 은 저장소 루트
+              // 주의: JCasC 가 ${...} 를 환경변수로 치환하므로 Groovy 문자열 보간 대신 + 로 잇는다
+              def repoJob = { String team, String repo ->
+                multibranchPipelineJob(team + '/' + repo) {
+                  branchSources {
+                    branchSource {
+                      source {
+                        giteaSCMSource {
+                          id(team + '-' + repo)
+                          serverUrl('https://gpu.example.ac.kr/gitea')
+                          repoOwner('myorg')
+                          repository(repo)
+                          credentialsId('gitea-' + team + '-ci')
+                          traits {
+                            giteaBranchDiscovery { strategyId(1) }
+                            headWildcardFilter { includes('main'); excludes('') }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  orphanedItemStrategy { discardOldItems { numToKeep(5) } }
+                }
+              }
+              teamFolder('infra', 'infra 팀 (infra-ci, 빌드 네임스페이스 jenkins-infra)')
+              teamFolder('rag', 'rag 팀 (rag-ci, 빌드 네임스페이스 jenkins-rag)')
+              teamFolder('vkey', 'vkey 팀 (vkey-ci, 빌드 네임스페이스 jenkins-vkey)')
+              ['admin-manager', 'k8s-manager', 'monitoring-web'].each { repoJob('infra', it) }
+              ['rag-server', 'rag-web'].each { repoJob('rag', it) }
+              ['vkey-server', 'vkey-web'].each { repoJob('vkey', it) }
+
+rbac:
+  create: true
+  readSecrets: true               # kubernetes-credentials-provider 가 jenkins 네임스페이스 Secret 을 읽는다
+
+persistence:
+  enabled: true
+  storageClass: nfs-csi
+  size: 10Gi
+
+agent:
+  enabled: true
+  # 기본 cloud(kubernetes, 컨트롤러 SA·jenkins 네임스페이스)는 어느 폴더에도 허용하지 않는다 → 사실상 사용 안 함
+  usageRestricted: true
+  # 빌드 Pod 는 Jenkinsfile 의 podTemplate 으로 정의 (kaniko 등). 여기 기본 jnlp 템플릿만 둔다.
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      memory: "1Gi"
+
+# 팀별 cloud. 인증은 credentialsId 의 팀 SA 토큰(그 네임스페이스에만 권한)으로 한다.
+# kubernetesURL 을 공백 한 칸(" ")으로 둔다: kubernetes 플러그인은 serverUrl 이 비어 있으면 클러스터 내부 설정
+# (API 주소 + /var/run/secrets 의 클러스터 CA)을 쓰고 토큰만 credentialsId 로 바꾼다. 빈 문자열("")은 차트가
+# 기본값 https://kubernetes.default 로 덮어써서, 그 경우 CA 가 없어 PKIX 오류로 Pod 를 못 띄운다.
+additionalClouds:
+  infra:
+    controller: {cloudName: infra}
+    kubernetesURL: " "
+    credentialsId: k8s-infra-launcher
+    agent: {namespace: jenkins-infra, usageRestricted: true}
+  rag:
+    controller: {cloudName: rag}
+    kubernetesURL: " "
+    credentialsId: k8s-rag-launcher
+    agent: {namespace: jenkins-rag, usageRestricted: true}
+  vkey:
+    controller: {cloudName: vkey}
+    kubernetesURL: " "
+    credentialsId: k8s-vkey-launcher
+    agent: {namespace: jenkins-vkey, usageRestricted: true}

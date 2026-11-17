@@ -21,14 +21,14 @@
 ```
 $ kubectl get ipaddresspool -A
 NAMESPACE        NAME            AUTO ASSIGN   ADDRESSES
-metallb-system   lb-pool   true          ["10.0.0.21-10.0.0.27"]
+metallb-system   deepcell-pool   true          ["10.0.0.21-10.0.0.27"]
 ```
 
 이 풀에서 이미 2개가 쓰이고 있다(`kserve-ingress-gateway` → `10.0.0.21`, `llm-serving/ai-gateway` → `10.0.0.22`). 총 7개 중 5개가 여유 — `infra` namespace에 `Gateway` 리소스를 만들면 자동으로 `.23`부터 하나 배정받게 된다. 즉 **"IP 개수를 신청해서 회신받는 방식"이 아니라, Gateway를 만드는 순간 풀에서 자동으로 나온다.**
 
 ## Decision
 
-`infra` namespace 전용 `Gateway`(`infra-gateway`)가 실제로 생성되어 MetalLB `lb-pool`에서 **`10.0.0.23`을 할당받았고, 외부에서 HTTP로 정상 접속 확인함**(`curl http://10.0.0.23/` → Gitea 200 OK). `k8s_manager`는 이 Gateway를 새로 만들지 않고 재사용한다([0007](0007-ingress-controller-choice.md)). 풀 사용량은 3/7(`.21` kserve, `.22` llm-serving, `.23` infra)로, 질의서의 "Monitoring 1 + RAG 2 + vKey 2 = 5개" 요청이 그대로면 기존 사용분(3개, RAG/vKey 아직 미생성) 포함 향후 7개 소진 가능성은 그대로 유효.
+`infra` namespace 전용 `Gateway`(`infra-gateway`)가 실제로 생성되어 MetalLB `deepcell-pool`에서 **`10.0.0.23`을 할당받았고, 외부에서 HTTP로 정상 접속 확인함**(`curl http://10.0.0.23/` → Gitea 200 OK). `k8s_manager`는 이 Gateway를 새로 만들지 않고 재사용한다([0007](0007-ingress-controller-choice.md)). 풀 사용량은 3/7(`.21` kserve, `.22` llm-serving, `.23` infra)로, 질의서의 "Monitoring 1 + RAG 2 + vKey 2 = 5개" 요청이 그대로면 기존 사용분(3개, RAG/vKey 아직 미생성) 포함 향후 7개 소진 가능성은 그대로 유효.
 
 ## Consequences
 

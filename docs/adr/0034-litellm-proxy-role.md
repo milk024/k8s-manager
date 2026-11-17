@@ -20,4 +20,4 @@
 
 - 클러스터에 LiteLLM Proxy는 없다. vLLM 앞단 라우팅은 Envoy AI Gateway(`envoy-ai-gateway-system`)와 `llm-d-inference-scheduler`가 맡는다.
 - AI Gateway가 토큰 사용량을 메트릭으로 집계하므로 사용량 집계 용도로 LiteLLM을 둘 필요가 없다.
-- 남은 이슈: AI Gateway 인증 정책(SecurityPolicy) 적용 검토 중([0008](0008-network-exposure-scope.md)).
+- 남은 이슈: AI Gateway에 인증(SecurityPolicy)이 없다([0008](0008-network-exposure-scope.md)).

@@ -104,16 +104,42 @@ router.get('/pods/:name/logs', async (req, res, next) => {
     return res.status(400).json({ error: 'namespace query parameter is required' });
   }
   try {
-    const log = await k8sService.getPodLog(req.query.namespace, req.params.name, req.query.container);
-    res.type('text/plain').send(log);
+    const log = await k8sService.getPodLog(req.query.namespace, req.params.name, {
+      container: req.query.container,
+      previous: req.query.previous === 'true',
+      tailLines: req.query.tailLines,
+    });
+    res.type('text/plain').send(log ?? '');
   } catch (err) {
     next(err);
   }
 });
 
+// Pod 상세 화면: 소유 체인·ConfigMap·Secret(이름만)·PVC·Service·HTTPRoute·ArgoCD 앱
+router.get('/pods/:name/related', async (req, res, next) => {
+  if (!req.query.namespace) {
+    return res.status(400).json({ error: 'namespace query parameter is required' });
+  }
+  try {
+    res.json(await k8sService.getPodRelated(req.query.namespace, req.params.name));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ?namespace=&pod= 를 주면 그 Pod 의 이벤트만
 router.get('/events', async (req, res, next) => {
   try {
-    res.json(await k8sService.listEvents(req.query.namespace));
+    res.json(await k8sService.listEvents(req.query.namespace, { pod: req.query.pod }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ArgoCD 배포 상태 (읽기 전용 — Sync 등 조작은 ArgoCD UI 에서)
+router.get('/argocd/apps', async (req, res, next) => {
+  try {
+    res.json(await k8sService.listArgoApps());
   } catch (err) {
     next(err);
   }

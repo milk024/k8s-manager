@@ -1,7 +1,9 @@
+# 2026-11-12: 차트 HTTPRoute 비활성화. 라우트는 k8s/gitea-httproute.yaml 로 직접 관리
+# (/gitea 접두사 제거 rewrite 와 /v2 예외 규칙이 필요해서 차트 템플릿으로는 표현이 안 됨)
 gatewayAPI:
   core:
     httpRoute:
-      enabled: true
+      enabled: false
       hostnames: []
       parentRefs:
       - group: gateway.networking.k8s.io
@@ -11,10 +13,27 @@ gatewayAPI:
         sectionName: http
       tls: false
   enabled: true
+# Gitea 는 /data(큐 leveldb)를 잠그므로 두 Pod 가 동시에 뜰 수 없다 → Recreate (업그레이드 시 약 1분 중단)
+strategy:
+  type: Recreate
+  rollingUpdate: null
 gitea:
+  # DB 비밀번호를 values 대신 Secret 에서 넣는다 (app.ini [database] PASSWD 를 환경변수로 덮어씀)
+  additionalConfigFromEnvs:
+    - name: GITEA__DATABASE__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: gitea-postgresql-auth
+          key: password
   admin:
+    # upgrade 때 values 의 비밀번호로 되돌리지 않음 (UI 에서 바꾼 비밀번호 유지)
+    passwordMode: initialOnlyNoReset
     email: admin@internal.local
-    password: ""   # 실제 값은 values-secret.yaml(gitignore) 또는 --set-string으로 주입
+    # 비밀번호는 values 에 두지 않는다 (2026-11-16). Secret gitea-admin-secret(username, password)을 참조.
+    # passwordMode=initialOnlyNoReset 이라 gitea_admin 이 이미 있으면 이 Secret 의 비밀번호는 적용되지 않는다
+    # (새로 설치할 때만 초기 비밀번호로 쓰임). 실제 비밀번호 변경은 gitea CLI/UI 로 한다.
+    # existingSecret 을 지우고 password 도 비우면 차트 기본 비밀번호(공개됨)가 쓰이니 주의.
+    existingSecret: gitea-admin-secret
     username: gitea_admin
   config:
     actions:
@@ -22,13 +41,17 @@ gitea:
     cache:
       ADAPTER: memory
     server:
-      DOMAIN: 10.0.0.23
+      DOMAIN: gpu.example.ac.kr
       PROTOCOL: http
-      ROOT_URL: http://10.0.0.23/
+      ROOT_URL: https://gpu.example.ac.kr/gitea/
+      SSH_DOMAIN: gpu.example.ac.kr
       SSH_LISTEN_PORT: 2222
       SSH_PORT: 22
     session:
       PROVIDER: memory
+    # 웹훅은 기본값(external)이면 클러스터 내부 주소로 못 보낸다. 내부 수신처만 이름으로 허용 (2026-11-16)
+    webhook:
+      ALLOWED_HOST_LIST: "external,k8s-manager-svc.infra.svc.cluster.local,jenkins.jenkins.svc.cluster.local,argocd-server.argocd.svc.cluster.local"
 image:
   digest: ""
   fullOverride: ""
@@ -43,7 +66,8 @@ postgresql:
     postgresql:
       auth:
         database: gitea
-        password: ""   # 실제 값은 values-secret.yaml(gitignore) 또는 --set-string으로 주입
+        # 비밀번호는 Secret gitea-postgresql-auth(password=gitea 계정, postgres-password=관리자)에서 읽는다 (2026-11-16)
+        existingSecret: gitea-postgresql-auth
         username: gitea
 postgresql-ha:
   enabled: false

@@ -1,0 +1,98 @@
+# Jenkins 팀별 빌드 네임스페이스 (2026-11-16)
+# - 빌드 Pod 는 팀 네임스페이스(jenkins-infra / jenkins-rag / jenkins-vkey)에서만 뜬다.
+# - 팀의 쓰기 토큰(이미지 push, deploy 저장소 push)은 그 팀 네임스페이스 Secret 에만 둔다.
+#   Pod 는 같은 네임스페이스 Secret 만 마운트할 수 있으므로 다른 팀 Jenkinsfile 이 꺼내 쓸 수 없다.
+# - Jenkins 는 팀마다 별도 Kubernetes cloud(infra/rag/vkey)로 Pod 를 띄운다. 각 cloud 는 아래 jenkins-launcher
+#   ServiceAccount 토큰으로 접속하므로, Jenkinsfile 이 namespace 를 바꿔 적어도 자기 팀 네임스페이스 밖에는 못 띄운다.
+#   cloud 사용은 폴더별로 제한 (k8s/jenkins-values.yaml: usageRestricted + 폴더 permittedClouds).
+# 적용: kubectl apply -f k8s/jenkins-teams.yaml  (아래 3개 팀 블록은 이름만 다르고 모양이 같다)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-infra
+  labels: {team: infra, purpose: ci-build}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: jenkins-launcher, namespace: jenkins-infra}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: jenkins-launcher, namespace: jenkins-infra}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: jenkins-launcher, namespace: jenkins-infra}
+subjects: [{kind: ServiceAccount, name: jenkins-launcher, namespace: jenkins-infra}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: jenkins-launcher}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-rag
+  labels: {team: rag, purpose: ci-build}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: jenkins-launcher, namespace: jenkins-rag}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: jenkins-launcher, namespace: jenkins-rag}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: jenkins-launcher, namespace: jenkins-rag}
+subjects: [{kind: ServiceAccount, name: jenkins-launcher, namespace: jenkins-rag}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: jenkins-launcher}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-vkey
+  labels: {team: vkey, purpose: ci-build}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: jenkins-launcher, namespace: jenkins-vkey}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: jenkins-launcher, namespace: jenkins-vkey}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: jenkins-launcher, namespace: jenkins-vkey}
+subjects: [{kind: ServiceAccount, name: jenkins-launcher, namespace: jenkins-vkey}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: jenkins-launcher}

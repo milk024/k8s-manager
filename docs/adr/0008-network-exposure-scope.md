@@ -1,6 +1,6 @@
 # ADR-008. 외부 네트워크 노출 범위
 
-- **Status**: 부분 확정 — 443/80 공개, 8080은 IP 화이트리스트, LLM Gateway 인증 정책 적용이 남은 과제
+- **Status**: 부분 확정 — 443/80 공개, 8080은 IP 화이트리스트, LLM Gateway 무인증 노출이 남은 리스크
 - **이전 Status**: 대기 중
 
 ## Context
@@ -27,9 +27,11 @@ Ingress가 Host/path 기반으로 여러 백엔드(GUI, 관리서버, 필요 시
 
 ## 현황 갱신 (2026-11-03, 실제 클러스터 조회 기준)
 
-- 실제 노출 현황: MetalLB `lb-pool`(10.0.0.21~27) 중 5개를 Gateway가 사용한다.
+- 실제 노출 현황: MetalLB `deepcell-pool`(10.0.0.21~27) 중 5개를 Gateway가 사용한다.
 - 공개 포트는 80/443이다(`infra-gateway`는 HTTP→HTTPS 리다이렉트 적용). 8080은 NetworkPolicy로 지정 IP(/32)만 허용한다.
-  - `rag-gateway-8080-restrict`: 192.0.2.23, .115, .116, .118, .119, .120
-  - `vkey-gateway-8080-restrict`: 192.0.2.23, .115, .120, .122
-- **남은 과제**: LLM 추론 경로의 Gateway 2개(`ai-gateway`, `kserve-ingress-gateway`)는 인증 정책을 아직 적용하지 않았다. 외부 도달 여부를 점검한 뒤 ClusterIP 전용 전환 또는 SecurityPolicy(API Key) 적용을 계획 중이다. 전환 전에 `rag-server`의 LLM 호출 주소를 LB IP에서 클러스터 내부 Service 주소로 바꾼다.
+  - `rag-gateway-8080-restrict`: 203.234.10.23, .115, .116, .118, .119, .120
+  - `vkey-gateway-8080-restrict`: 203.234.10.23, .115, .120, .122
+- **리스크**: `ai-gateway`(10.0.0.22:80, vLLM 앞단)와 `kserve-ingress-gateway`(10.0.0.21:80)는 인증 없이 공인 IP로 열려 있다. 외부에서 LLM을 직접 호출하면 GPU를 그대로 점유할 수 있다.
+  - 조치 방향: ① 외부 curl로 실제 도달 여부 확인 → ② 외부 접근이 불필요하면 ClusterIP 전용으로 전환, 필요하면 SecurityPolicy(API Key) 적용.
+  - 선행 작업: `rag-server`가 LLM을 `http://10.0.0.22/v1`(LB IP 헤어핀)로 호출하고 있다. 클러스터 내부 Service 주소로 먼저 바꿔야 한다.
 - 원 결정의 "외부 인터넷 아웃바운드 0개" 전제는 현재와 다르다. GPU 드라이버가 부팅 시 커널 헤더를 외부에서 내려받는다([0044](0044-kernel-pin-highpoint-driver.md)).

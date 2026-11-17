@@ -1,0 +1,54 @@
+# ArgoCD 웹 UI: https://gpu.example.ac.kr/argocd (infra-gateway https 리스너)
+# - Gateway 는 같은 네임스페이스(infra) 라우트만 받으므로 HTTPRoute 는 infra 에 두고,
+#   argocd 네임스페이스의 Service 참조는 ReferenceGrant 로 허용한다.
+# - /argocd 접두사는 떼지 않는다 (ArgoCD server.rootpath=/argocd, k8s/argocd-values.yaml)
+# 적용: kubectl apply -f k8s/argocd-httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: infra
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: infra-gateway
+    namespace: infra
+    sectionName: https
+  hostnames:
+  - gpu.example.ac.kr
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /argocd
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /argocd/
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /argocd/
+    backendRefs:
+    - name: argocd-server
+      namespace: argocd
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: infra-httproute-to-argocd-server
+  namespace: argocd
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: infra
+  to:
+  - group: ""
+    kind: Service
+    name: argocd-server

@@ -1,0 +1,57 @@
+# ArgoCD (argo/argo-cd chart 10.17.2, ArgoCD v3.6.1) — 2026-11-12 설치
+#   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --version 10.17.2 -f k8s/argocd-values.yaml
+# 원칙
+# - 웹 UI: https://gpu.example.ac.kr/argocd (2026-11-12 공개, 학내망 전용)
+#   infra-gateway https 리스너 → HTTPRoute infra/argocd (k8s/argocd-httproute.yaml) → argocd-server:80
+#   TLS 는 Gateway 가 gpu.example.ac.kr 인증서로 종료하고 ArgoCD 는 HTTP(server.insecure) 로 받는다.
+#   경로 /argocd 는 떼지 않고 그대로 전달 (server.rootpath)
+#   비상 접속: kubectl port-forward -n argocd svc/argocd-server 8080:80 → http://localhost:8080/argocd
+# - SSO(dex) 미사용. 로그인/MFA 는 admin_manager 작업 때 결정
+# - 상태 저장 없음(redis 휘발성) → NFS 미사용
+# - 배포 저장소(deploy-infra/rag/vkey) 연결과 Application 등록은 별도 단계
+#   (Gitea 는 클러스터 내부 주소 http://gitea-http.infra.svc.cluster.local:3000/myorg/<repo>.git 로 읽는다)
+
+global:
+  domain: gpu.example.ac.kr
+
+configs:
+  cm:
+    exec.enabled: false           # UI 에서 Pod 쉘 접속 금지
+    statusbadge.enabled: false
+    url: https://gpu.example.ac.kr/argocd
+    admin.enabled: true           # 초기 관리자. 비밀번호는 Secret argocd-initial-admin-secret (확인 후 변경·삭제)
+    timeout.reconciliation: 180s
+  params:
+    server.insecure: true         # TLS 는 Gateway 에서 종료
+    server.rootpath: /argocd
+    server.basehref: /argocd
+  # Gitea 내장 SSH (gitea-ssh 는 headless 서비스라 Pod 의 실제 포트 2222 로 접속). 키는 /data/ssh 에 영구 저장됨
+  ssh:
+    extraHosts: |
+      [gitea-ssh.infra.svc.cluster.local]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFBCA0lcHi82Zm3OCup61qU2F0UC+nupmB9uCJ91Sjbu4T3YcQrHL+v1zKVifQuq6uRq0P3Vd2/kNLSMOH5lhsU=
+      [gitea-ssh.infra.svc.cluster.local]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID75ea4LqvqX9AhQBmrmB0Zf9DYmrfqeSwgJooA8+d78
+      [gitea-ssh.infra.svc.cluster.local]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXpPiitcCCE62mRJd4CgUyoCOP43J4mziOx/0+ywjnE6J560PdU3g29jXNLXo2++ub+VvCs/xOWbdJonlnQ7RQjqxPi6ZALmm3MRqtyvn0hnMirg5yNk841E/ABCRS9UcxAQ7dQXt3V88eP8yvc64a5wVAIuhe8eIBiWL8D/h1uhrR6g13PkBcaoVNYLULIU3scP6fbyDCx7z+OSse2Wid9sTLw+6ErpteTER2Z3h/0z7LpA6vM7Bgoci3sRJdUTcVlkGfGCAleldnyUyl7ntDp/culD88x8qp3hQ+fWsVlYf5sI5ttEw/xa2/50YFaewDHEax7ZENVx/0/OG4hGVnEMzKIGAeLxR6uVHdmnvC+yXgHgUS6E+KiCrDTF9QMkWepdzDF9pUh9r2P8K0FitynRcHjo5kNJoH4m5eZQb9KzqrIJls6mTfR9+MW8tyZ1IlgIPSdXJlAwMY90GV32FKspK4s/nb/ZcdAnXY8KdGRXOOVDNhlZyz3ZPuu+sM0eyhuD73a2EYtKgcAc6JIOlkXTo1YC520pJKuXdeMTakGkKJTFhlnKrH1icT8nFxuyDDczW7Gq9WXENdpAzfMskTFNE270kWuKx1VzOliEAGEeRGqr75srMcW2Ihx8zkHqAS8jOD4cVvHkG/c2bFbPf7Rqa2UxdVv83gYxLOw479cQ==
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false                  # 알림은 Alertmanager 웹훅 연결 때 같이 결정
+
+applicationSet:
+  replicas: 1
+
+server:
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
+
+repoServer:
+  replicas: 1
+
+controller:
+  replicas: 1
+
+redis:
+  enabled: true

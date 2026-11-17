@@ -1,0 +1,122 @@
+# Jenkins 팀 cloud 접속 토큰 자동 갱신 (2026-11-16)
+# - 팀 cloud(infra/rag/vkey)는 jenkins-<팀>/jenkins-launcher SA 토큰(Secret jenkins/k8s-<팀>-launcher, 1년)으로 빌드 Pod 를 띄운다.
+# - 매월 1일 03:00(KST)에 세 토큰을 새 1년짜리로 다시 발급해 Secret 을 바꾼다 → 만료 걱정 없음, 토큰도 주기적으로 바뀜.
+#   Jenkins(kubernetes-credentials-provider)는 Secret 변경을 감지해 자격 증명을 갱신한다.
+#   예전 토큰은 원래 만료일까지 유효하다 (TokenRequest 토큰은 개별 폐기가 안 됨. 급히 막으려면 SA 를 지웠다가 다시 만든다).
+# - 이 CronJob 의 권한: jenkins-<팀> 의 jenkins-launcher 토큰 발급 + jenkins 의 k8s-*-launcher Secret 3개 읽기·수정. 그 외 없음.
+# 적용: kubectl apply -f k8s/jenkins-token-rotation.yaml
+# 즉시 실행: kubectl create job -n jenkins --from=cronjob/launcher-token-rotation launcher-token-rotation-manual
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: launcher-token-rotator, namespace: jenkins}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: launcher-token-rotator, namespace: jenkins}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["k8s-infra-launcher", "k8s-rag-launcher", "k8s-vkey-launcher"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: launcher-token-rotator, namespace: jenkins}
+subjects: [{kind: ServiceAccount, name: launcher-token-rotator, namespace: jenkins}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: launcher-token-rotator}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: launcher-token-rotator, namespace: jenkins-infra}
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["jenkins-launcher"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: launcher-token-rotator, namespace: jenkins-infra}
+subjects: [{kind: ServiceAccount, name: launcher-token-rotator, namespace: jenkins}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: launcher-token-rotator}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: launcher-token-rotator, namespace: jenkins-rag}
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["jenkins-launcher"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: launcher-token-rotator, namespace: jenkins-rag}
+subjects: [{kind: ServiceAccount, name: launcher-token-rotator, namespace: jenkins}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: launcher-token-rotator}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: launcher-token-rotator, namespace: jenkins-vkey}
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["jenkins-launcher"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: launcher-token-rotator, namespace: jenkins-vkey}
+subjects: [{kind: ServiceAccount, name: launcher-token-rotator, namespace: jenkins}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: launcher-token-rotator}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: launcher-token-rotation, namespace: jenkins}
+spec:
+  schedule: "0 3 1 * *"
+  timeZone: Asia/Seoul
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 604800
+      template:
+        spec:
+          serviceAccountName: launcher-token-rotator
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: rotate
+              image: curlimages/curl:8.11.1
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: ["ALL"]}
+              resources:
+                requests: {cpu: 10m, memory: 16Mi}
+                limits: {memory: 64Mi}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  SA=/var/run/secrets/kubernetes.io/serviceaccount
+                  API=https://kubernetes.default.svc
+                  AUTH="Authorization: Bearer $(cat $SA/token)"
+                  for t in infra rag vkey; do
+                    resp=$(curl -sSf --cacert $SA/ca.crt -H "$AUTH" -H 'Content-Type: application/json' -X POST \
+                      -d '{"apiVersion":"authentication.k8s.io/v1","kind":"TokenRequest","spec":{"expirationSeconds":31536000}}' \
+                      "$API/api/v1/namespaces/jenkins-$t/serviceaccounts/jenkins-launcher/token")
+                    tok=$(printf '%s' "$resp" | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p')   # API 응답은 줄바꿈·공백이 있는 JSON
+                    exp=$(printf '%s' "$resp" | sed -n 's/.*"expirationTimestamp": *"\([^"]*\)".*/\1/p')
+                    [ -n "$tok" ] || { echo "$t: token request failed" >&2; exit 1; }
+                    b64=$(printf '%s' "$tok" | base64 | tr -d '\n')
+                    curl -sSf -o /dev/null --cacert $SA/ca.crt -H "$AUTH" -H 'Content-Type: application/merge-patch+json' -X PATCH \
+                      -d "{\"data\":{\"text\":\"$b64\"}}" "$API/api/v1/namespaces/jenkins/secrets/k8s-$t-launcher"
+                    echo "$t: launcher token renewed, expires $exp"
+                  done

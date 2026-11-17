@@ -24,17 +24,21 @@ router.post('/gitea', (req, res) => {
       return res.status(401).json({ error: 'invalid signature' });
     }
   }
+  const event = req.get('x-gitea-event');
+  // ADR-0052: Jenkins 가 남긴 커밋 상태(jenkins/build) → 'ci:build'. 폴링 없이 Gitea status 웹훅으로 받는다.
+  if (event === 'status') {
+    const build = giteaService.buildFromStatusEvent(req.body);
+    if (build) {
+      auditHelper.record({ type: 'ci-build', repo: `${build.owner}/${build.repo}`, sha: build.sha, status: build.status, buildNumber: build.buildNumber });
+      socketService.emitDashboard('ci:build', build);
+      giteaService.invalidateBuildSummaries();
+    }
+    return res.status(204).end();
+  }
+  if (event && event !== 'push') return res.status(204).end();
   const summary = giteaService.handlePushEvent(req.body);
   auditHelper.record({ type: 'gitea-push', ...summary });
   socketService.emitDashboard('gitea:push', summary);
-  // ADR-012, ADR-028: 실제 CI/CD 트리거는 여전히 Gitea Actions + Runner Pod 담당 —
-  // 여기서는 그 결과(성공/실패)를 push 시점부터 짧게 폴링해서 실시간으로 알려주기만 한다.
-  const owner = req.body.repository?.owner?.login;
-  const repo = req.body.repository?.name;
-  const sha = req.body.after;
-  if (owner && repo && sha) {
-    giteaService.pollActionsUntilDone(owner, repo, sha);
-  }
   return res.status(204).end();
 });
 

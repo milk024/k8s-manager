@@ -49,3 +49,14 @@ docker push 10.0.0.23:80/myorg/hello-world:test   # 성공
 
 - 베이스 이미지 `rag-model-base`는 semver 태그(`v1`~`v5`)를 쓴다. v5는 2026-11-05 서버에서 빌드해 push했다([0049](0049-rag-model-base-image.md)). 앱 이미지는 계속 commit SHA 태그를 쓴다.
 - Gitea 패키지 저장소 사용량은 약 29.7GB다. NFS에 용량 제한이 없어 PVC 요청값(10Gi)과 상관없이 쓸 수 있다. 실제 한계는 NFS 디스크(6.9T)다.
+
+## 현황 갱신 (2026-11-12)
+
+- Harbor는 도입하지 않기로 했다(사용자 결정). Gitea 내장 레지스트리를 계속 쓴다.
+- 레지스트리 경로는 `https://gpu.example.ac.kr/v2`(루트)로 정했다. 기존 이미지 주소 `10.0.0.23:80/...`를 옮기기 전까지 HTTP `/v2`를 유지한다([0050](0050-gitea-account-permission-split.md)).
+- 알고 있는 한계: 패키지 쓰기 권한이 조직 단위라서 CI 토큰 하나로 `myorg`의 모든 이미지를 push할 수 있다.
+- **레지스트리 주소 이전 완료 (2026-11-13)**: 이미지 주소를 `10.0.0.23:80/myorg/...`(HTTP)에서 `gpu.example.ac.kr/myorg/...`(HTTPS, 공인 인증서)로 옮겼다.
+  - 바꾼 곳: 6개 앱과 rag-dev의 이미지 주소, CI 6곳, rag-server 베이스 이미지, pull Secret 4개
+  - 노드 containerd에는 따로 설정할 것이 없었다.
+  - HTTP `/v2` 경로를 닫았다. 이제 HTTP로 오면 https로 301 리다이렉트한다.
+  - Runner의 `insecure-registry` 설정을 지웠다. 그 김에 DinD를 재시작해 쌓여 있던 빌드 캐시도 비웠다.

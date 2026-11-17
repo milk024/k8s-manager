@@ -21,10 +21,19 @@ router.get('/repos/:owner/:repo', async (req, res, next) => {
   }
 });
 
-router.get('/repos/:owner/:repo/actions/runs', async (req, res, next) => {
+// 빌드 화면: CI 저장소별 최신 커밋·최근 빌드·최근 성공 빌드 (10초 캐시)
+router.get('/builds', async (req, res, next) => {
   try {
-    const limit = Number(req.query.limit) || 10;
-    res.json(await giteaService.listActionRuns(req.params.owner, req.params.repo, limit));
+    res.json(await giteaService.listBuildSummaries(req.query.owner || 'myorg'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Jenkins 빌드 이력 (Gitea 커밋 상태 jenkins/build 기준, main 최근 커밋)
+router.get('/repos/:owner/:repo/builds', async (req, res, next) => {
+  try {
+    res.json(await giteaService.listBuilds(req.params.owner, req.params.repo, req.query.limit, req.query.branch || 'main'));
   } catch (err) {
     next(err);
   }

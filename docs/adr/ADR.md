@@ -2,15 +2,15 @@
 
 번호는 작성 순서(파일명 고정)이고, 아래 목차는 주제별로 재구성한 것이다. 상태 열은 각 문서 Status의 요약이며, 세부 내용은 문서 본문의 `현황 갱신` 절을 본다.
 
-- 최종 정리: 2026-11-05 (실제 클러스터 조회 기준으로 Status 갱신)
-- 총 49건 — 확정 25 · 부분 확정 7 · 제안 2 · 대기/조사 15
+- 최종 정리: 2026-11-12 (실제 클러스터 조회 기준으로 Status 갱신)
+- 총 52건 — 확정 28 · 부분 확정 7 · 제안 2 · 대기/조사 15
 
 ## 우선 처리 필요 (리스크 높은 순)
 
 | 순위 | 항목 | 관련 ADR |
 |---|---|---|
 | 1 | 커널 6.8.0-146 재부팅 전 HighPoint `hptnvme` 드라이버 재빌드 (미실시 상태로 재부팅하면 부팅 불가) | [0044](0044-kernel-pin-highpoint-driver.md) |
-| 2 | LLM 추론 Gateway 인증 정책 적용 | [0008](0008-network-exposure-scope.md), [0034](0034-litellm-proxy-role.md) |
+| 2 | `ai-gateway`(.22), `kserve-ingress-gateway`(.21) 무인증 공개 노출 확인·차단 | [0008](0008-network-exposure-scope.md), [0034](0034-litellm-proxy-role.md) |
 | 3 | Alertmanager receiver 연결, Prometheus를 NFS 밖으로 이전 | [0020](0020-logging-monitoring-system.md), [0017](0017-incident-response-sla.md) |
 | 4 | etcd·Postgres·Gitea 백업 자동화 및 복구 리허설 | [0016](0016-backup-recovery-policy.md), [0023](0023-etcd-backup-policy.md) |
 | 5 | ResourceQuota/LimitRange, DB Pod requests/limits 지정 | [0014](0014-rbac-networkpolicy-scope.md) |
@@ -55,6 +55,7 @@
 | 009 | 관리자 및 유지보수 권한에 대한 책임 소재 | 대기 중 | [0009-admin-maintenance-responsibility.md](0009-admin-maintenance-responsibility.md) |
 | 014 | 내부 RBAC, Ingress & Egress, Network Policy 판단 | 부분 확정 | [0014-rbac-networkpolicy-scope.md](0014-rbac-networkpolicy-scope.md) |
 | 046 | GITEA_TOKEN을 Helm 템플릿 밖의 별도 Secret으로 분리 | 확정 | [0046-helm-external-secret.md](0046-helm-external-secret.md) |
+| 050 | Gitea 계정·권한 분리와 단일 주소(gpu.example.ac.kr/gitea) | 확정·운영 중 | [0050-gitea-account-permission-split.md](0050-gitea-account-permission-split.md) |
 
 ## 3. 배포 아키텍처
 
@@ -74,7 +75,10 @@
 | 012 | Local Git 동기화 및 VS Code Server 구축 여부 | 결정됨 | [0012-local-git-vscode-server.md](0012-local-git-vscode-server.md) |
 | 028 | SSH(22포트) 및 code-server 코드 반영/동기화 방식 | 확정 | [0028-ssh-code-server-access-and-sync.md](0028-ssh-code-server-access-and-sync.md) |
 | 041 | simple-git / child_process(GPU·npm·pip·helm) 연동 항목 폐기 | 확정 | [0041-simple-git-child-process-integration-discarded.md](0041-simple-git-child-process-integration-discarded.md) |
-| 042 | CI/CD 빌드 실행 방식 (Gitea Actions + Runner Pod) | 확정 | [0042-cicd-runner-execution.md](0042-cicd-runner-execution.md) |
+| 042 | CI/CD 빌드 실행 방식 (Gitea Actions + Runner Pod) | 대체됨 (빌드 052, 배포 051) | [0042-cicd-runner-execution.md](0042-cicd-runner-execution.md) |
+| 051 | 서비스 배포를 ArgoCD GitOps로 전환 | 확정·운영 중 | [0051-argocd-gitops-deployment.md](0051-argocd-gitops-deployment.md) |
+| 052 | CI를 Gitea Actions에서 Jenkins(Kaniko)로 전환, 팀별 빌드 네임스페이스 | 확정·운영 중 | [0052-jenkins-ci.md](0052-jenkins-ci.md) |
+| 053 | 모니터링 웹 접근 통제(관리자 로그인)와 운영 화면 | 확정·운영 중 | [0053-monitoring-web-access-and-ops-screens.md](0053-monitoring-web-access-and-ops-screens.md) |
 
 ## 5. 모니터링 & 로깅
 
@@ -156,6 +160,9 @@
 - 2026-11-03: 번호 중복 해소 — `0041-cicd-runner-execution.md` → `0042-cicd-runner-execution.md`(0041은 simple-git 폐기 문서로 유지), 참조 링크 수정
 - 2026-11-03: 0001~0042 중 24건 Status를 실제 클러스터 상태로 갱신(각 문서에 `이전 Status`와 `현황 갱신` 절 추가)
 - 2026-11-03: 신규 0043~0047 추가(자동 업데이트 비활성화, 커널 고정, 멀티노드 전환 RTO/RPO, Helm Secret 분리, socket push)
+- 2026-11-17: 신규 0053(모니터링 웹 접근 통제·운영 화면), 0047·0050·0051·0052 현황 갱신
+- 2026-11-16: 신규 0052(Jenkins CI 전환), 0042 대체됨
+- 2026-11-12: 신규 0050(Gitea 계정·권한 분리), 0051(ArgoCD GitOps 전환) 추가, 0014·0036·0042 현황 갱신
 - 2026-11-05: 신규 0048(모델 가중치 PVC 이전, 제안)·0049(RAG 모델 베이스 이미지 포함·서버 빌드, 운영 중) 추가, 0035 확정, 0020·0031·0036·0042·0044 현황 갱신
 
 ## 출처 매핑
@@ -170,4 +177,6 @@
 - `0043~0044`: 2026-10-11 NFS 장애 대응 및 후속 조치
 - `0045`: `멀티노드_전환_다운타임_RTO_RPO_v2.docx` 보고서
 - `0046~0047`: `k8s_manager` 커밋 `46a36f4`, `dce898c`, `38e0353`
+- `0050~0051`: 2026-11-10~12 Gitea 권한 분리·ArgoCD 전환 작업 (deploy-infra/rag/vkey 저장소, terraform_infra `rbac/dev-teams-no-deploy`)
+- `0053`: 2026-11-17 운영 체크리스트 8번(monitoring-web) 작업 — k8s-manager·admin-manager·monitoring-web·deploy-infra 커밋
 - `0048~0049`: rag-server 커밋 `f3736bf`, `rag-model-base:v5`, PC 빌드·push 실패 조사

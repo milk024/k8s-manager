@@ -1,6 +1,6 @@
 # ADR-042. CI/CD 빌드 실행 방식 (Gitea Actions + Runner Pod)
 
-- **Status**: 확정 — 저장소 6개에 적용, 빌드·배포까지 자동화
+- **Status**: 대체됨 — 빌드는 [0052](0052-jenkins-ci.md)(Jenkins, 2026-11-16), 배포는 [0051](0051-argocd-gitops-deployment.md)(ArgoCD). Runner 제거됨
 - **이전 Status**: 확정
 
 ## Context
@@ -62,3 +62,9 @@
 - 2026-11-05 rag-server 빌드·배포(`f3736bf`)도 정상 수행됐다. 20GB 베이스 이미지 빌드도 서버에서 한다([0049](0049-rag-model-base-image.md)).
 - **리스크**: Runner DinD의 `/var/lib/docker`가 노드 OS 디스크(HighPoint RAID, 881G 중 45% 사용)에 쌓인다. 이미지 120GB와 빌드 캐시 128GB가 있고, 그중 이미지 71GB와 빌드 캐시 56GB는 정리할 수 있다.
   - 조치 방향: 주기적 `docker builder prune --keep-storage`·`docker image prune`, 또는 DinD 저장소를 별도 볼륨으로 분리.
+
+## 현황 갱신 (2026-11-12)
+
+- 배포 단계를 ArgoCD GitOps로 바꿨다([0051](0051-argocd-gitops-deployment.md)). 6개 저장소 모두 CI는 빌드한 뒤 `ci/bump-deploy.sh`로 deploy 저장소의 이미지 태그만 커밋한다. CI에서 클러스터 자격 증명(`CD_KUBE_CONFIG_B64`)은 삭제했다.
+- 빌드 실행(Gitea Actions + Runner)은 그대로다. Jenkins 전환은 보류한다.
+- CI 계정을 `rag-ci`·`vkey-ci`·`infra-ci`로 나눴다([0050](0050-gitea-account-permission-split.md)).
