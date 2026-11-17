@@ -104,7 +104,7 @@
   - 앱 7개 모두 https 저장소에서 Synced/Healthy다.
   - k8s-manager CI 태그 bump(04:34:12Z) 3초 뒤 웹훅이 200으로 전달됐다. ArgoCD 로그에 `refreshing app from webhook`이 찍혔다.
   - deploy-rag·deploy-vkey PR #3 병합 push도 웹훅 200, 앱 새로고침이 확인됐다.
-- **남은 정리**: AppProject `sourceRepos`에는 예전 SSH 주소가 아직 남아 있다. ArgoCD Secret `repo-deploy-*`(SSH 키)와 Gitea 배포 키도 그대로다. 전환이 안정되면 지운다.
+- **정리 완료 (같은 날 오후)**: AppProject `sourceRepos`에서 예전 SSH 주소를 뺐다(deploy-infra `fcc3691`, deploy-rag·deploy-vkey PR #4). ArgoCD Secret `repo-deploy-*`(SSH 개인키)와 Gitea 배포 키 3개도 지웠다. 배포 키는 https 전환 이후 쓰인 기록이 없었고, 정리 뒤에도 앱 7개 모두 Synced/Healthy, 병합 push 웹훅 200을 확인했다. 이제 ArgoCD의 저장소 접근은 `repo-creds-gitea-deploy`(argocd-read 토큰) 하나뿐이다.
 
 ## 현황 갱신 (2026-11-17 오후): 배포 상태 화면
 
