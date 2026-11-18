@@ -18,6 +18,5 @@ k8s-manager 앱 차트는 **`myorg/deploy-infra` 의 `apps/k8s-manager/`** 로 �
 | `infra-gateway.yaml` | Gateway `infra-gateway` | `kubectl apply -f` |
 | `gitea-httproute.yaml`, `http-to-https-redirect.yaml` | Gitea·HTTP 리다이렉트 라우트 | `kubectl apply -f` |
 | `dcgm-servicemonitor.yaml` | GPU 메트릭 ServiceMonitor | `kubectl apply -f` |
-| `vkey/` | vkey-postgres·pgadmin (초기 생성용 참고) | `kubectl apply -f` |
 
 비밀값은 커밋하지 않는다. (`gitea-values.yaml` 의 관리자 비밀번호 등은 교체 후 제거 예정)
