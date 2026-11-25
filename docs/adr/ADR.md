@@ -9,7 +9,7 @@
 
 | 순위 | 항목 | 관련 ADR |
 |---|---|---|
-| 1 | 커널 6.8.0-146 재부팅 전 HighPoint `hptnvme` 드라이버 재빌드 (미실시 상태로 재부팅하면 부팅 불가) | [0044](0044-kernel-pin-highpoint-driver.md) |
+| 1 | 커널 146 전환 전 HighPoint `hptnvme` 드라이버 재빌드 (미실시). 지금은 GRUB으로 136 고정이라 재부팅해도 136으로 정상 부팅, 146으로 부팅할 때만 실패. 보안 패치가 136에서 멈춘 상태 | [0044](0044-kernel-pin-highpoint-driver.md) |
 | 2 | `ai-gateway`(.22), `kserve-ingress-gateway`(.21) 무인증 공개 노출 확인·차단 | [0008](0008-network-exposure-scope.md), [0034](0034-litellm-proxy-role.md) |
 | 3 | Alertmanager receiver 연결, Prometheus를 NFS 밖으로 이전 | [0020](0020-logging-monitoring-system.md), [0017](0017-incident-response-sla.md) |
 | 4 | etcd·Postgres·Gitea 백업 자동화 및 복구 리허설 | [0016](0016-backup-recovery-policy.md), [0023](0023-etcd-backup-policy.md) |
